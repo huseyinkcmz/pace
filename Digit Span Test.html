@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digit Span</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* HTML ve Body için genel kutu boyutlandırma */
+        html, body {
+            box-sizing: border-box; 
+        }
+        *, *::before, *::after {
+            box-sizing: inherit; 
+        }
+        /* Body stilleri */
+        body {
+            font-family: 'Inter', sans-serif;
+            touch-action: manipulation;
+            height: 100vh; 
+            overflow: hidden; 
+            background-color: #E2E8F0; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem; 
+        }
+        /* Animasyonlu rakam sınıfı */
+        .animated-digit {
+            animation: fadeInOutSmooth 1s ease-in-out forwards; 
+        }
+        /* Rakam animasyonu keyframe'leri */
+        @keyframes fadeInOutSmooth {
+            0%   { opacity: 0; }
+            10%  { opacity: 1; }
+            50%  { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        /* Tuş takımı butonu stilleri */
+        .keypad-btn {
+            transition: all 0.1s ease;
+            user-select: none;
+            background-color: #F0F0F0; 
+            color: #4A5568; 
+            font-weight: 700; 
+            border: 1px solid #D0D0D0; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+        }
+        .keypad-btn:hover {
+            background-color: #E8E8E8; 
+        }
+        .keypad-btn:active {
+            transform: scale(0.95);
+            background-color: #D8D8D8; 
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); 
+        }
+        /* Sil butonu için özel stiller */
+        .keypad-btn-backspace {
+            background-color: #E0E0E0; 
+            color: #4A5568; 
+            font-size: 2rem; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #D0D0D0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .keypad-btn-backspace:hover {
+            background-color: #D0D0D0;
+        }
+        .keypad-btn-backspace:active {
+            transform: scale(0.95);
+            background-color: #C0C0C0;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* Kullanıcı giriş alanı */
+        #user-input-display {
+            border-bottom: 2px solid #ef4444;
+            color: #4A5568; 
+        }
+        /* Özet kartı stilleri */
+        .summary-card {
+            border-left-width: 4px;
+        }
+        .summary-card.correct {
+            border-left-color: #22c55e; 
+        }
+        .summary-card.incorrect {
+            border-left-color: #ef4444; 
+        }
+        /* Duyarlı turuncu yuvarlak stilleri */
+        .digit-circle {
+            background-color: #DE6D2C; 
+            border: 2px solid black; 
+            border-radius: 50%; 
+            width: 80vw; 
+            max-width: 500px; 
+            aspect-ratio: 1 / 1; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); 
+        }
+        /* Rakamın kendi stilleri */
+        #animated-digit {
+            color: white; 
+            font-size: 14rem; 
+            font-weight: 500; 
+            transform: translateX(0); 
+        }
+        /* 4 rakamı için özel hizalama */
+        #animated-digit.digit-4-adjust {
+            transform: translateX(-0.05em); 
+        }
+        /* 1 rakamı için özel hizalama */
+        #animated-digit.digit-1-adjust {
+            transform: translateX(-0.03em); 
+        }
+        /* Küçük ekranlar için animasyonlu rakam stilleri */
+        @media (max-width: 640px) { 
+            #animated-digit {
+                font-size: 9rem; 
+            }
+        }
+
+        /* Başlangıç mesajı alanı stilleri */
+        #initial-message-area { 
+            font-size: 3.5rem; 
+            font-weight: 700; 
+            color: #4A5568; 
+            text-align: center;
+            line-height: 1.2;
+            width: 100%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            margin-bottom: 2rem; 
+        }
+        /* Küçük ekranlar için başlangıç mesajı stilleri */
+        @media (max-width: 640px) { 
+            #initial-message-area {
+                font-size: 2.75rem; 
+            }
+        }
+
+        /* Tüm oyun ekranları için ortak stil */
+        .game-screen {
+            width: 100%;
+            height: 100%; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between; 
+            padding: 1rem; 
+            flex-grow: 1; 
+        }
+        /* Ana oyun sarmalayıcısının stilleri */
+        #main-game-wrapper {
+             flex-grow: 1; 
+             display: flex; 
+             flex-direction: column;
+             justify-content: center; 
+             align-items: center; 
+             position: relative; 
+             background-color: #E2E8F0; 
+             border-radius: 1rem; 
+             box-shadow: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23); 
+             padding: 1rem; 
+             height: calc(100vh - 4rem); 
+             max-width: 768px; 
+             min-height: 300px; 
+        }
+        /* Mobil ekranlar için ana oyun sarmalayıcısı stilleri */
+        @media (max-width: 640px) { 
+            #main-game-wrapper {
+                height: calc(100vh - 5rem); 
+                max-height: 480px; 
+                min-height: 280px; 
+                width: calc(100vw - 2rem); 
+                max-width: 400px; 
+            }
+        }
+        /* Tablet ekranlar için ana oyun sarmalayıcısı stilleri */
+        @media (min-width: 641px) and (max-width: 1024px) {
+            #main-game-wrapper {
+                height: calc(100vh - 6rem); 
+                max-height: 600px; 
+                min-height: 400px; 
+            }
+        }
+        /* Sayıların ve mesajların gösterildiği alanlar için ortak hizalama */
+        .content-display-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            flex-grow: 1; 
+        }
+        /* Geri sayım ekranındaki sayı için özel stil */
+        #countdown-display {
+            color: #000; 
+            font-weight: 500; 
+            font-size: 10rem; 
+        }
+        /* Küçük ekranlar için geri sayım ekranı stilleri */
+        @media (max-width: 640px) { 
+            #countdown-display {
+                font-size: 6rem; 
+            }
+        }
+        /* Tuş takımı butonları için mobil uyumluluk */
+        #keypad button {
+            font-size: 1.5rem; 
+            padding: 1rem; 
+        }
+        /* Masaüstü için tuş takımı butonları stilleri */
+        @media (min-width: 641px) { 
+            #keypad button {
+                font-size: 2rem; 
+                padding: 1.5rem; 
+            }
+        }
+        /* İmza alanı stilleri */
+        #signature {
+            position: fixed;
+            bottom: 1rem; 
+            right: 12px;
+            font-size: 0.75rem;
+            color: #333; 
+            font-style: italic;
+            z-index: 9999;
+            user-select: none;
+            pointer-events: none;
+            opacity: 0.9; 
+        }
+    </style>
+</head>
+<body class="bg-gray-300 text-white min-h-screen flex flex-col items-center justify-center">
+
+    <!-- Digit Span App | Developer: Mustafa Bölük | https://www.linkedin.com/in/mustafa-boluk/ | Tarih: 08-2025 -->
+    <!-- Ana Oyun Kapsayıcısı - Tüm etkileşimli ekranları barındırır -->
+    <div id="main-game-wrapper" class="w-full max-w-md sm:max-w-lg lg:max-w-xl">
+        <!-- Zamanlayıcı -->
+        <div class="absolute top-4 right-4 sm:top-6 sm:right-6">
+            <p id="timer-display" class="text-lg font-semibold text-cyan-700"></p>
+        </div>
+
+        <!-- SAYFA 1: BAŞLANGIÇ EKRANI -->
+        <div id="start-screen" class="game-screen">
+            <div class="content-display-area">
+                <div id="initial-message-area">Verbal Memory: Digit Span (B2)</div>
+            </div>
+            <button id="start-button" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg text-lg transition-all duration-200 transform hover:scale-105 shadow-xl">Başla</button>
+        </div>
+
+        <!-- SAYFA 2: SAYILARIN GÖSTERİLDİĞİ EKRAN (Turuncu Yuvarlak) -->
+        <div id="presenting-screen" class="game-screen hidden">
+            <div class="content-display-area">
+                <div id="digit-display" class="digit-circle">
+                    <span id="animated-digit"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SAYFA 2.5: GERİ SAYIM EKRANI -->
+        <div id="countdown-screen" class="game-screen hidden">
+            <div class="content-display-area">
+                <p class="text-xl font-semibold text-gray-700 mb-4">The test will start on the next screen:</p>
+                <p id="countdown-display" class="text-6xl font-bold"></p>
+            </div>
+        </div>
+
+        <!-- SAYFA 3: KULLANICININ YANIT GİRDİĞİ EKRAN -->
+        <div id="recall-screen" class="game-screen hidden">
+            <div class="content-display-area">
+                <div id="user-input-display" class="text-3xl tracking-widest h-12 flex items-center justify-center w-full mb-4 border-b-2 border-red-500"></div>
+                <div id="keypad" class="grid grid-cols-3 gap-3 sm:gap-4 w-full">
+                    <button data-key="1" class="keypad-btn text-2xl py-4 rounded-lg shadow-lg">1</button>
+                    <button data-key="2" class="keypad-btn text-2xl py-4 rounded-lg shadow-lg">2</button>
+                    <button data-key="3" class="keypad-btn text-2xl py-4 rounded-lg shadow-lg">3</button>
+                    <button data-key="4" class="keypad-btn text-2xl py-4 rounded-lg shadow-lg">4</button>
+                    <button data-key="5" class="keypad-btn text-2xl py-4 rounded-lg shadow-lg">5</button>
+                    <button data-key="6" class="keypad-btn text-2xl py-4 rounded-lg shadow-lg">6</button>
+                    <button data-key="7" class="keypad-btn text-2xl py-4 rounded-lg shadow-lg">7</button>
+                    <button data-key="8" class="keypad-btn text-2xl py-4 rounded-lg shadow-lg">8</button>
+                    <button data-key="9" class="keypad-btn text-2xl py-4 rounded-lg shadow-lg">9</button>
+                    <div class="opacity-0"></div>
+                    <button data-key="0" class="keypad-btn text-2xl py-4 rounded-lg shadow-lg">0</button>
+                    <button data-key="backspace" class="keypad-btn keypad-btn-backspace py-4 rounded-lg shadow-lg">
+                        &#x232B; <!-- Backspace (Sil) ikonu -->
+                    </button>
+                </div>
+                <button id="finish-test-button" class="w-full bg-red-700 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg text-lg mt-6 transition-all duration-200 transform hover:scale-105 shadow-xl">Bitir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SAYFA 4: SONUÇ EKRANI -->
+    <div id="summary-container" class="bg-slate-800 p-4 sm:p-8 rounded-2xl shadow-2xl w-full max-w-md sm:max-w-2xl text-center hidden">
+        <h2 class="text-3xl font-bold text-indigo-400 mb-4">Test Sonuçları</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-900 p-4 rounded-lg mb-6">
+            <div>
+                <p class="text-slate-400 text-sm">SKOR</p>
+                <p id="summary-score" class="text-3xl font-bold text-amber-400"></p>
+            </div>
+            <div>
+                <p class="text-slate-400 text-sm">DOĞRU</p>
+                <p id="summary-correct" class="text-3xl font-bold text-green-500"></p>
+            </div>
+            <div>
+                <p class="text-slate-400 text-sm">YANLIŞ</p>
+                <p id="summary-incorrect" class="text-3xl font-bold text-red-500"></p>
+            </div>
+            <div>
+                <p class="text-slate-400 text-sm">BAŞARI</p>
+                <p id="summary-percentage" class="text-3xl font-bold text-cyan-400"></p>
+            </div>
+        </div>
+        <h3 class="text-xl font-semibold text-slate-300 mb-4">Set Detayları</h3>
+        <div id="summary-details" class="max-h-80 overflow-y-auto text-left space-y-3 pr-2">
+            <!-- Detaylar buraya eklenecek -->
+        </div>
+        <button id="restart-button" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg text-lg transition-all duration-200 mt-6">Yeniden Başla</button>
+    </div>
+
+    <script>
+        // DOM Elementlerini al
+        const mainGameWrapper = document.getElementById('main-game-wrapper');
+        const startScreen = document.getElementById('start-screen');
+        const presentingScreen = document.getElementById('presenting-screen');
+        const countdownScreen = document.getElementById('countdown-screen');
+        const recallScreen = document.getElementById('recall-screen');
+        const summaryContainer = document.getElementById('summary-container');
+        
+        const digitDisplay = document.getElementById('digit-display');
+        const animatedDigit = document.getElementById('animated-digit');
+        const initialMessageArea = document.getElementById('initial-message-area');
+        const countdownDisplay = document.getElementById('countdown-display');
+        const userInputDisplay = document.getElementById('user-input-display');
+        const timerDisplay = document.getElementById('timer-display');
+        const keypad = document.getElementById('keypad');
+        const startButton = document.getElementById('start-button');
+        const finishTestButton = document.getElementById('finish-test-button');
+        const restartButton = document.getElementById('restart-button');
+
+        // Oyun Ayarları
+        const SET_CONFIG = [
+            { sequenceLength: 6,  targetAnswerLength: 4 },
+            { sequenceLength: 6,  targetAnswerLength: 4 },
+            { sequenceLength: 7,  targetAnswerLength: 5 },
+            { sequenceLength: 7,  targetAnswerLength: 5 },
+            { sequenceLength: 9,  targetAnswerLength: 6 },
+            { sequenceLength: 9,  targetAnswerLength: 6 },
+            { sequenceLength: 10, targetAnswerLength: 7 },
+            { sequenceLength: 10, targetAnswerLength: 7 },
+            { sequenceLength: 12, targetAnswerLength: 8 },
+            { sequenceLength: 12, targetAnswerLength: 8 },
+            { sequenceLength: 13, targetAnswerLength: 9 },
+            { sequenceLength: 13, targetAnswerLength: 9 },
+            { sequenceLength: 15, targetAnswerLength: 10 },
+            { sequenceLength: 15, targetAnswerLength: 10 }
+        ];
+        const DIGIT_DISPLAY_TIME = 1000;
+        const DIGIT_ANIMATION_TOTAL_DURATION = 1000;
+        const COUNTDOWN_TIME = 3;
+
+        // Oyun Durumu Değişkenleri
+        let sequence = [], correctAnswer = [], userSequence = [];
+        let currentSetIndex = 0, score = 0;
+        let resultsHistory = [];
+        let gameState = 'waiting'; 
+        let recallTimerId; 
+        let countdownTimerId; 
+
+        // Yardımcı fonksiyon: Belirli bir süre bekler
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        // Doğru cevabı hesaplar
+        function calculateCorrectAnswer(seq) {
+            if (seq.length === 0) return [];
+            const answer = [seq[0]];
+            for (let i = 1; i < seq.length; i++) {
+                if (seq[i] > seq[i - 1]) answer.push(seq[i]);
+            }
+            return answer;
+        }
+
+        // Yeni bir sayı dizisi oluşturur
+        function generateSequence() {
+            const { sequenceLength, targetAnswerLength } = SET_CONFIG[currentSetIndex];
+            let generatedSeq, calculatedAnswer;
+            do {
+                generatedSeq = [];
+                for (let i = 0; i < sequenceLength; i++) {
+                    let newDigit;
+                    if (i === 0) {
+                        newDigit = Math.floor(Math.random() * 9) + 1;
+                    } else {
+                        do {
+                            newDigit = Math.floor(Math.random() * 10);
+                        } while (newDigit === generatedSeq[i-1]);
+                    }
+                    generatedSeq.push(newDigit);
+                }
+                calculatedAnswer = calculateCorrectAnswer(generatedSeq);
+            } while (calculatedAnswer.length !== targetAnswerLength); 
+            sequence = generatedSeq;
+            correctAnswer = calculatedAnswer;
+        }
+
+        // Oyunu başlatır veya yeniden başlatır
+        function startGame() {
+            currentSetIndex = 0;
+            score = 0;
+            resultsHistory = [];
+            startCountdownPhase(); 
+        }
+
+        // Geri sayım aşamasını başlatır
+        function startCountdownPhase() {
+            clearInterval(countdownTimerId); 
+            gameState = 'countdown';
+            updateUI();
+            let count = COUNTDOWN_TIME;
+            countdownDisplay.textContent = count;
+            countdownDisplay.classList.remove('animated-digit'); 
+            void countdownDisplay.offsetWidth; 
+            countdownDisplay.classList.add('animated-digit'); 
+
+            countdownTimerId = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countdownDisplay.textContent = count;
+                    countdownDisplay.classList.remove('animated-digit');
+                    void countdownDisplay.offsetWidth;
+                    countdownDisplay.classList.add('animated-digit');
+                } else {
+                    clearInterval(countdownTimerId);
+                    nextSet(); 
+                }
+            }, 1000);
+        }
+
+        // Bir sonraki sayı setini gösterir
+        async function nextSet() {
+            if (currentSetIndex >= SET_CONFIG.length) {
+                gameOver(); 
+                return;
+            }
+            userSequence = []; 
+            gameState = 'presenting'; 
+            generateSequence(); 
+            updateUI(); 
+
+            animatedDigit.textContent = '';
+            animatedDigit.classList.remove('animated-digit'); 
+
+            await sleep(100); 
+
+            for (const digit of sequence) {
+                if (gameState === 'gameOver') return; 
+
+                animatedDigit.textContent = digit; 
+                
+                animatedDigit.classList.remove('digit-4-adjust', 'digit-1-adjust');
+
+                if (digit === 4) {
+                    animatedDigit.classList.add('digit-4-adjust');
+                } else if (digit === 1) {
+                    animatedDigit.classList.add('digit-1-adjust');
+                }
+
+                animatedDigit.classList.remove('animated-digit');
+                void animatedDigit.offsetWidth; 
+                animatedDigit.classList.add('animated-digit'); 
+                
+                await sleep(DIGIT_ANIMATION_TOTAL_DURATION); 
+            }
+            
+            animatedDigit.textContent = '';
+            animatedDigit.classList.remove('animated-digit', 'digit-4-adjust', 'digit-1-adjust'); 
+
+            if (gameState !== 'gameOver') {
+                startRecallPhase(); 
+            }
+        }
+        
+        // Geri çağırma (kullanıcı girişi) aşamasını başlatır
+        function startRecallPhase() {
+            clearInterval(recallTimerId); 
+            userSequence = []; 
+            userInputDisplay.textContent = ''; 
+            gameState = 'recalling'; 
+            updateUI(); 
+            let timeLeft = sequence.length; 
+            timerDisplay.textContent = `${timeLeft}s`; 
+            recallTimerId = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = `${timeLeft}s`;
+                if (timeLeft <= 0) {
+                    judgeAnswer(); 
+                }
+            }, 1000);
+        }
+
+        // Kullanıcının cevabını değerlendirir
+        function judgeAnswer() {
+            clearInterval(recallTimerId); 
+            gameState = 'judging'; 
+            const isCorrect = JSON.stringify(correctAnswer) === JSON.stringify(userSequence); 
+            
+            resultsHistory.push({
+                setIndex: currentSetIndex,
+                shownSequence: sequence,
+                correctAnswer: correctAnswer,
+                userAnswer: userSequence,
+                isCorrect: isCorrect
+            });
+
+            if (isCorrect) {
+                score++; 
+            }
+            
+            currentSetIndex++; 
+            if (currentSetIndex < SET_CONFIG.length) {
+                 startCountdownPhase(); 
+            } else {
+                 gameOver(); 
+            }
+        }
+        
+        // Oyunu bitirir ve sonuç ekranını gösterir
+        function gameOver() {
+            gameState = 'gameOver'; 
+            updateUI(); 
+            showSummary(); 
+        }
+
+        // Testi erken bitirme işlevi
+        function handleFinishTest() {
+            clearInterval(recallTimerId); 
+            const isCorrect = JSON.stringify(correctAnswer) === JSON.stringify(userSequence);
+            resultsHistory.push({
+                setIndex: currentSetIndex,
+                shownSequence: sequence,
+                correctAnswer: correctAnswer,
+                userAnswer: userSequence,
+                isCorrect: isCorrect
+            });
+            gameOver();
+        }
+
+        // Sonuç özetini gösterir
+        function showSummary() {
+            const totalSets = resultsHistory.length;
+            const correctCount = resultsHistory.filter(r => r.isCorrect).length;
+            const percentage = totalSets > 0 ? Math.round((correctCount / totalSets) * 100) : 0;
+            
+            document.getElementById('summary-score').textContent = `${correctCount} / ${totalSets}`;
+            document.getElementById('summary-correct').textContent = correctCount;
+            document.getElementById('summary-incorrect').textContent = totalSets - correctCount;
+            document.getElementById('summary-percentage').textContent = `${percentage}%`;
+            
+            const detailsContainer = document.getElementById('summary-details');
+            detailsContainer.innerHTML = ''; 
+
+            // Tablo yapısını oluştur
+            let tableHtml = `
+                <div class="max-h-80 overflow-y-auto pr-2">
+                    <table class="w-full text-center border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-slate-700 text-slate-200">
+                                <th class="p-2 border border-slate-600 rounded-tl-lg">Set</th>
+                                <th class="p-2 border border-slate-600">Beklenen</th>
+                                <th class="p-2 border border-slate-600">Seçilen</th>
+                                <th class="p-2 border border-slate-600 rounded-tr-lg">Sonuç</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            resultsHistory.forEach(result => {
+                const resultClass = result.isCorrect ? 'text-green-400' : 'text-red-400';
+                tableHtml += `
+                    <tr class="bg-slate-900 border-b border-slate-700 last:border-b-0">
+                        <td class="p-2 border border-slate-700 text-slate-300">${result.setIndex + 1}</td>
+                        <td class="p-2 border border-slate-700 text-slate-200 font-semibold">${result.correctAnswer.join('-')}</td>
+                        <td class="p-2 border border-slate-700 text-slate-200 font-semibold">${result.userAnswer.join('-') || "Boş"}</td>
+                        <td class="p-2 border border-slate-700 ${resultClass} font-bold">${result.isCorrect ? 'DOĞRU' : 'YANLIŞ'}</td>
+                    </tr>
+                `;
+            });
+
+            tableHtml += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            detailsContainer.innerHTML = tableHtml; 
+        }
+
+        // UI elementlerinin görünürlüğünü oyun durumuna göre günceller
+        function updateUI() {
+            mainGameWrapper.style.display = 'none';
+            summaryContainer.style.display = 'none';
+
+            startScreen.classList.add('hidden');
+            presentingScreen.classList.add('hidden');
+            countdownScreen.classList.add('hidden');
+            recallScreen.classList.add('hidden');
+            
+            timerDisplay.style.visibility = 'hidden';
+
+            if (gameState === 'waiting') {
+                mainGameWrapper.style.display = 'flex'; 
+                startScreen.classList.remove('hidden'); 
+            } else if (gameState === 'countdown') {
+                mainGameWrapper.style.display = 'flex'; 
+                countdownScreen.classList.remove('hidden'); 
+            } else if (gameState === 'presenting') {
+                mainGameWrapper.style.display = 'flex'; 
+                presentingScreen.classList.remove('hidden'); 
+            } else if (gameState === 'recalling') {
+                mainGameWrapper.style.display = 'flex'; 
+                recallScreen.classList.remove('hidden'); 
+                timerDisplay.style.visibility = 'visible'; 
+            } else if (gameState === 'gameOver') {
+                summaryContainer.style.display = 'block'; 
+            }
+        }
+        
+        // Olay Dinleyicileri
+        startButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', () => {
+            gameState = 'waiting';
+            updateUI();
+        });
+        finishTestButton.addEventListener('click', handleFinishTest);
+
+        keypad.addEventListener('click', (e) => {
+            if (gameState !== 'recalling') return; 
+            const button = e.target.closest('button[data-key]');
+            if (!button) return;
+            const key = button.dataset.key;
+            if (key === 'backspace') userSequence.pop(); 
+            else userSequence.push(parseInt(key, 10)); 
+            userInputDisplay.textContent = userSequence.join('-'); 
+        });
+
+        // Sayfa yüklendiğinde başlangıç durumunu ayarla
+        document.addEventListener('DOMContentLoaded', updateUI);
+    </script>
+    <div id="signature">🛠 Made by Mustafa – 08/2025</div>
+</body>
+</html>

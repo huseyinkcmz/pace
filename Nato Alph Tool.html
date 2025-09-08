@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>NATO Alph Tool</title>
+<style>
+  body{font-family:system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji;display:flex;gap:20px;flex-direction:column;align-items:center;padding:24px;background:#0f172a;color:#e6eef8}
+  .card{background:#0b1220;padding:18px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.6);width:720px;max-width:95%}
+  h1{margin:0 0 12px;font-size:20px}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  button{padding:10px 14px;border-radius:8px;border:0;cursor:pointer;font-weight:600;transition:transform 0.1s ease}
+  button:active{transform:translateY(1px)}
+  button:disabled{opacity:0.6;cursor:not-allowed;}
+  .start{background:#06b6d4;color:#042029}
+  .pause{background:#f59e0b;color:#2b1f00}
+  .results{background:#6366f1;color:#fff}
+  .whiteBtn, .redBtn {
+    width: 60px; /* Genişlik */
+    height: 60px; /* Yükseklik */
+    border-radius: 50%; /* Daire şekli */
+    padding: 0; /* İç boşluğu sıfırla */
+    display: inline-flex; /* İçeriği ortalamak için (eğer olsaydı) */
+    justify-content: center; /* İçeriği yatayda ortala */
+    align-items: center; /* İçeriği dikeyde ortala */
+    font-size: 0; /* Metin olmadığı için font size sıfırlanabilir */
+    flex-shrink: 0; /* Küçülmesini engelle */
+  }
+  .whiteBtn{background:#ffffff;border:2px solid #ddd;}
+  .redBtn{background:#ef4444;}
+
+  .panel{display:flex;gap:12px;margin-top:12px;align-items:center;flex-wrap:wrap}
+  .big{font-size:44px;font-weight:700;letter-spacing:6px}
+  label{display:inline-flex;align-items:center;gap:8px}
+  select,input[type=number]{padding:8px;border-radius:6px;border:1px solid #2b394a;background:#071223;color:#e6eef8}
+  .log{height:180px;overflow:auto;background:#06111a;padding:10px;border-radius:8px;margin-top:12px;border:1px solid #122234;font-size:14px;line-height:1.4;}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  td,th{padding:8px;border-bottom:1px dashed #1b2a38;font-size:13px;text-align:left;}
+  th{background:#1a2b3c;}
+  .stat{display:flex;gap:12px;margin-top:12px;flex-wrap:wrap}
+  .stat > div{background:#071826;padding:10px;border-radius:8px;min-width:120px;text-align:center}
+  small{color:#90a0b3}
+  .voice-chooser{margin-left:8px;display:flex;align-items:center;}
+
+  .footer-credits {
+    margin-top: 40px;
+    font-size: 13px;
+    color: #6b7280;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Aviation Alphabet</h1>
+
+    <div class="controls">
+      <label>Test Süresi:
+        <select id="duration" disabled>
+          <option value="60">1 dakika</option>
+          <option value="120">2 dakika</option>
+          <option value="180">3 dakika</option>
+          <option value="240">4 dakika</option>
+          <option value="300">5 dakika</option>
+        </select>
+      </label>
+
+      <label>Aralık (sabit 4s):
+        <input type="number" id="interval" value="4" min="1" max="10" style="width:70px" disabled />
+      </label>
+
+      <label>
+        Erkek sesi tercih et
+        <input type="checkbox" id="preferMale" checked />
+      </label>
+
+      <label>
+        Harfleri Görsel Olarak Göster
+        <input type="checkbox" id="showLettersCheckbox" checked />
+      </label>
+
+      <!-- YENİ: Logları Göster/Gizle Ayarı -->
+      <label>
+        Logları Göster
+        <input type="checkbox" id="showLogCheckbox" checked />
+      </label>
+
+      <div class="voice-chooser" id="voiceArea"></div>
+
+      <div style="margin-left:auto" class="controls-right">
+        <button id="startBtn" class="start">Başlat</button>
+        <button id="pauseBtn" class="pause" disabled>Duraklat</button>
+        <button id="showResult" class="results">Sonuçları Göster</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div>
+        <div style="font-size:12px"><small>Şu an konuşulan:</small></div>
+        <div id="currentLetter" class="big">—</div>
+        <div id="currentNato" style="opacity:0.85;margin-top:6px">—</div>
+      </div>
+
+      <div style="margin-left:18px">
+        <div style="font-size:12px"><small>Butonlar</small></div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="whiteBtn" class="whiteBtn" disabled></button>
+          <button id="redBtn" class="redBtn" disabled></button>
+        </div>
+        <div style="margin-top:8px;font-size:12px;color:#9fb0c6">
+          <small>Doğru butona basmalısınız. Cevap süresi bir sonraki harfe kadardır.</small><br>
+          <small>Beyaz: 3 Sesli Harf, Kırmızı: 3 Sessiz Harf</small>
+        </div>
+      </div>
+
+      <div style="margin-left:auto;min-width:190px">
+        <div style="font-size:12px"><small>Durum</small></div>
+        <div id="timeLeft" style="font-size:22px;font-weight:700;margin-top:6px">00:00</div>
+
+        <div class="stat">
+          <div><div id="correctCount" style="font-size:18px">0</div><small>Doğru</small></div>
+          <div><div id="wrongCount" style="font-size:18px">0</div><small>Yanlış</small></div>
+          <div><div id="missedCount" style="font-size:18px">0</div><small>Kaçırılan</small></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="log" id="log"></div>
+
+    <div id="resultTable"></div>
+  </div>
+
+  <footer class="footer-credits">
+    -MH "Bir teşekkür yeterli. Başarılar"
+  </footer>
+
+<script>
+/*
+  Tek dosyalık oyun.
+  Not: "Sesli harfler" burada İngilizce/Latin alfabeye göre A,E,I,O,U kabul edilmiştir.
+  İstersen bu seti kolayca değiştirebilirsin: vowels = new Set([...])
+*/
+
+const NATO = {
+  A:'Alpha', B:'Bravo', C:'Charlie', D:'Delta', E:'Echo', F:'Foxtrot', G:'Golf', H:'Hotel',
+  I:'India', J:'Juliett', K:'Kilo', L:'Lima', M:'Mike', N:'November', O:'Oscar', P:'Papa',
+  Q:'Quebec', R:'Romeo', S:'Sierra', T:'Tango', U:'Uniform', V:'Victor', W:'Whiskey', X:'X-ray',
+  Y:'Yankee', Z:'Zulu'
+};
+
+const letters = Object.keys(NATO);
+const vowels = new Set(['A','E','I','O','U']); // gerekirse burayı değiştir
+const intervalInput = document.getElementById('interval');
+const durationSelect = document.getElementById('duration');
+const startBtn = document.getElementById('startBtn');
+const pauseBtn = document.getElementById('pauseBtn');
+const showResult = document.getElementById('showResult');
+const currentLetterEl = document.getElementById('currentLetter');
+const currentNatoEl = document.getElementById('currentNato');
+const whiteBtn = document.getElementById('whiteBtn');
+const redBtn = document.getElementById('redBtn');
+const timeLeftEl = document.getElementById('timeLeft');
+const logEl = document.getElementById('log');
+const correctCountEl = document.getElementById('correctCount');
+const wrongCountEl = document.getElementById('wrongCount');
+const missedCountEl = document.getElementById('missedCount');
+const voiceArea = document.getElementById('voiceArea');
+const preferMaleCheckbox = document.getElementById('preferMale');
+const showLettersCheckbox = document.getElementById('showLettersCheckbox');
+const showLogCheckbox = document.getElementById('showLogCheckbox'); // YENİ: Logları göster/gizle checkbox'ı
+
+let synth = window.speechSynthesis;
+let voices = [];
+let chosenVoice = null;
+
+function refreshVoices(){
+  voices = synth.getVoices();
+  voiceArea.innerHTML = '';
+  if(!voices.length){ voiceArea.textContent = 'Ses listesi yükleniyor...'; return; }
+
+  const currentPreferredMale = preferMaleCheckbox.checked;
+
+  if (!chosenVoice || !voices.some(v => v.voiceURI === chosenVoice.voiceURI) || currentPreferredMale) {
+    if (currentPreferredMale) {
+      const maleCandidates = voices.filter(v => {
+        const n = (v.name + ' ' + v.lang + ' ' + (v.voiceURI || '')).toLowerCase();
+        return n.includes('male') || n.includes('google uk english male') || n.includes('matt') || n.includes('daniel') || n.includes('kevin') || n.includes('mark');
+      });
+      if (maleCandidates.length) {
+        chosenVoice = maleCandidates[0];
+      } else {
+        chosenVoice = voices.find(v => /en-US|en-GB/i.test(v.lang)) || voices[0];
+      }
+    } else {
+      chosenVoice = voices.find(v => /en-US|en-GB/i.test(v.lang)) || voices[0];
+    }
+  }
+
+  const span = document.createElement('span');
+  span.innerHTML = '<small>Seçilen ses:</small> <strong>' + (chosenVoice ? (chosenVoice.name || chosenVoice.lang) : 'Yok') + '</strong>';
+  voiceArea.appendChild(span);
+  const changeBtn = document.createElement('button');
+  changeBtn.textContent = 'Ses Seç';
+  changeBtn.style.marginLeft = '10px';
+  changeBtn.onclick = ()=>showVoicePicker();
+  voiceArea.appendChild(changeBtn);
+}
+
+
+// Ana pencere, popup'tan gelen veri isteğini dinler
+window.addEventListener('message', ev => {
+    if (ev.data && ev.data.type === 'requestVoicesData') {
+        ev.source.postMessage({
+            type: 'voicesData',
+            voices: voices.map(v => ({name:v.name, lang:v.lang, voiceURI:v.voiceURI}))
+        }, ev.origin);
+    }
+    // Ses seçimi için daha önce olan kısmı koru
+    else if(ev.data && ev.data.pick){
+        const vobj = voices.find(v => v.voiceURI === ev.data.pick.voiceURI);
+        if(vobj) chosenVoice = vobj;
+        refreshVoices();
+    }
+});
+
+
+if(speechSynthesis.onvoiceschanged !== undefined){
+  speechSynthesis.onvoiceschanged = refreshVoices;
+}
+refreshVoices();
+
+preferMaleCheckbox.addEventListener('change', refreshVoices);
+
+
+/* Oyun mantığı */
+let playTimer = null;
+let globalTimer = null;
+let remaining = 0;
+let isPaused = true;
+let letterIndex = 0;
+let history = []; // Son N harfi tutar (sadece loglama ve debug için)
+let currentSequenceBuffer = []; // Yeni: Aktif 3'lü seri takibi için
+let events = []; // Tüm tespit edilen olaylar
+let presses = []; // Tüm buton basışları
+let correct = 0, wrong = 0, missed = 0;
+let currentActiveEvent = null; // Yeni: Oyuncunun şu an yanıtlaması beklenen olay
+
+function updateControlsState(running){
+    durationSelect.disabled = running;
+    intervalInput.disabled = running;
+    startBtn.disabled = running;
+    pauseBtn.disabled = !running;
+    whiteBtn.disabled = !running;
+    redBtn.disabled = !running;
+    preferMaleCheckbox.disabled = running;
+    // showLettersCheckbox.disabled = running; // Harf gösterim ayarı test sırasında da değiştirilebilir olsun.
+    // showLogCheckbox.disabled = running; // Log gösterim ayarı test sırasında da değiştirilebilir olsun.
+}
+
+function log(msg){
+  // YENİ: Logları göster/gizle ayarına göre davran
+  if (showLogCheckbox.checked) {
+    const row = document.createElement('div');
+    row.innerHTML = `<small style="opacity:0.7;">[${new Date().toLocaleTimeString()}]</small> ${msg}`;
+    logEl.prepend(row);
+    if (logEl.children.length > 50) {
+      logEl.removeChild(logEl.lastChild);
+    }
+  }
+}
+
+function formatTime(sec){
+  const m = Math.floor(sec/60).toString().padStart(2,'0');
+  const s = (sec%60).toString().padStart(2,'0');
+  return `${m}:${s}`;
+}
+
+function speak(text){
+  if(!window.speechSynthesis) {
+    log('Tarayıcınız metin okuma özelliğini desteklemiyor.');
+    return;
+  }
+  const ut = new SpeechSynthesisUtterance(text);
+  if(chosenVoice) ut.voice = chosenVoice;
+  ut.pitch = 0.9;
+  ut.rate = 0.95;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(ut);
+}
+
+function nextLetter(){
+  if(remaining <= 0) {
+    stopTest();
+    return;
+  }
+
+  // Önceki olay yanıtlanmadıysa, "kaçırıldı" olarak işaretle
+  if(currentActiveEvent && currentActiveEvent.windowOpen && !currentActiveEvent.satisfied){
+      currentActiveEvent.windowOpen = false; // Süre penceresini kapat
+      currentActiveEvent.missed = true; // Kaçırıldı olarak işaretle
+      missed++;
+      missedCountEl.textContent = missed;
+      log(`<span style="color:#ef4444;">Kaçırıldı:</span> Önceki olay (${currentActiveEvent.type === 'vowel' ? '3 Sesli' : '3 Sessiz'} ${currentActiveEvent.last3letters.join(',')}), yeni harf gelmeden yanıtlanmadı.`);
+      currentActiveEvent = null; // Aktif olayı sıfırla
+  }
+
+  const letter = letters[Math.floor(Math.random() * letters.length)];
+  letterIndex++;
+  history.push(letter);
+  if(history.length > 20) history.shift();
+
+  if (showLettersCheckbox.checked) {
+    currentLetterEl.textContent = letter;
+    currentNatoEl.textContent = NATO[letter] || '';
+  } else {
+    currentLetterEl.textContent = '—';
+    currentNatoEl.textContent = '—';
+  }
+  
+  speak(NATO[letter]); // Burda harf okunuyor
+
+  // Yeni Dizi Kuralı: Harfleri tampona ekle ve kontrol et
+  currentSequenceBuffer.push(letter);
+  if (currentSequenceBuffer.length > 3) {
+      currentSequenceBuffer.shift(); // En eski harfi çıkar, son 3'ü tut
+  }
+
+  if (currentSequenceBuffer.length === 3) {
+    const last3 = [...currentSequenceBuffer]; // Tamponun kopyasını al
+    const allVowel = last3.every(l => vowels.has(l));
+    const allCons = last3.every(l => !vowels.has(l));
+
+    if(allVowel){
+      const ev = {type:'vowel', atIndex: history.length-1, globalIndex: letterIndex-1, time: Date.now(), satisfied:false, last3letters: last3};
+      events.push(ev);
+      log('<strong>3 SESLİ ÜST ÜSTE</strong> tespit edildi &rarr; Beyaz butona basılmalı. ['+last3.join(',')+']');
+      openPressWindow(ev, 'white');
+      currentSequenceBuffer = []; // Olay tespit edildi, diziyi sıfırla!
+    } else if(allCons){
+      const ev = {type:'cons', atIndex: history.length-1, globalIndex: letterIndex-1, time: Date.now(), satisfied:false, last3letters: last3};
+      events.push(ev);
+      log('<strong>3 SESSİZ ÜST ÜSTE</strong> tespit edildi &rarr; Kırmızı butona basılmalı. ['+last3.join(',')+']');
+      openPressWindow(ev, 'red');
+      currentSequenceBuffer = []; // Olay tespit edildi, diziyi sıfırla!
+    }
+  }
+}
+
+function openPressWindow(ev, expectedBtn){
+  ev.windowOpen = true; // Bu olayın yanıt penceresi açık
+  currentActiveEvent = ev; // Bu olayı aktif olay olarak işaretle
+}
+
+whiteBtn.onclick = ()=>registerPress('white');
+redBtn.onclick = ()=>registerPress('red');
+
+function registerPress(kind){
+  const now = Date.now();
+  const curIndex = letterIndex-1; // Basıldığı anki harfin global indeksi
+
+  // Aktif bir olay varsa ve yanıt penceresi açıksa
+  if(currentActiveEvent && currentActiveEvent.windowOpen && !currentActiveEvent.satisfied){
+    const expect = currentActiveEvent.type === 'vowel' ? 'white' : 'red';
+    if((kind === 'white' && expect === 'white') || (kind === 'red' && expect === 'red')){
+      currentActiveEvent.satisfied = true; // Olay yanıtlandı
+      currentActiveEvent.windowOpen = false; // Süre penceresini kapat
+      correct++;
+      correctCountEl.textContent = correct;
+      presses.push({when:now,type:kind,indexAtPress:currentActiveEvent.globalIndex,result:'correct',eventIndex:events.indexOf(currentActiveEvent)});
+      log('<span style="color:#06b6d4;">Doğru basış:</span> ' + (kind==='white'?'Beyaz':'Kırmızı') + '. Hedef: ' + (expect==='white'?'Beyaz':'Kırmızı') + '.');
+      currentActiveEvent = null; // Aktif olayı sıfırla
+    } else {
+      wrong++;
+      wrongCountEl.textContent = wrong;
+      presses.push({when:now,type:kind,indexAtPress:currentActiveEvent.globalIndex,result:'wrong',eventIndex:events.indexOf(currentActiveEvent)});
+      log('<span style="color:#f59e0b;">Yanlış basış:</span> beklenen ' + (expect==='white'?'Beyaz':'Kırmızı') + ' iken ' + (kind==='white'?'Beyaz':'Kırmızı') + ' basıldı.');
+      currentActiveEvent.satisfied = true; // Yanlış da olsa yanıtlandı sayılır, yeni olay beklenir
+      currentActiveEvent.windowOpen = false;
+      currentActiveEvent = null; // Aktif olayı sıfırla
+    }
+  } else { // Aktif bir olay yokken basıldıysa
+    wrong++;
+    wrongCountEl.textContent = wrong;
+    presses.push({when:now,type:kind,indexAtPress:curIndex,result:'false',eventIndex:null});
+    log('<span style="color:#f59e0b;">Boş basış:</span> bekleme yokken ' + (kind==='white'?'Beyaz':'Kırmızı') + ' butona basıldı.');
+  }
+}
+
+startBtn.onclick = ()=>{
+  if(!isPaused) return;
+
+  if(!playTimer){
+    resetTest();
+    logEl.innerHTML = ''; // Test başlangıcında logu temizle
+    remaining = Number(durationSelect.value);
+    timeLeftEl.textContent = formatTime(remaining);
+    log('Test başlıyor...');
+  }
+  isPaused = false;
+  updateControlsState(true);
+
+  globalTimer = setInterval(()=>{
+    if(remaining > 0){
+      remaining--;
+      timeLeftEl.textContent = formatTime(remaining);
+    }
+    if(remaining <= 0){
+      stopTest();
+    }
+  },1000);
+
+  nextLetter();
+  const iv = Number(intervalInput.value) * 1000;
+  playTimer = setInterval(()=> {
+    nextLetter();
+  }, iv);
+};
+
+pauseBtn.onclick = ()=>{
+  if(isPaused){
+    isPaused = false;
+    startBtn.click();
+    log('Test devam ediyor.');
+  } else {
+    isPaused = true;
+    if(playTimer){ clearInterval(playTimer); playTimer = null; }
+    if(globalTimer){ clearInterval(globalTimer); globalTimer = null; }
+    window.speechSynthesis.cancel();
+    updateControlsState(false);
+    startBtn.disabled = false;
+    log('Test duraklatıldı.');
+  }
+};
+
+function resetTest(){
+    history = [];
+    currentSequenceBuffer = []; // Sıfırla
+    events = [];
+    presses = [];
+    correct = wrong = missed = 0;
+    correctCountEl.textContent = '0';
+    wrongCountEl.textContent = '0';
+    missedCountEl.textContent = '0';
+    letterIndex = 0;
+    currentLetterEl.textContent = '—';
+    currentNatoEl.textContent = '—';
+    timeLeftEl.textContent = '00:00';
+    document.getElementById('resultTable').innerHTML = '';
+    window.speechSynthesis.cancel();
+    currentActiveEvent = null; // Aktif olayı sıfırla
+    logEl.innerHTML = ''; // Reset sırasında da logu temizle
+}
+
+
+function stopTest(){
+  isPaused = true;
+  if(playTimer){ clearInterval(playTimer); playTimer = null; }
+  if(globalTimer){ clearInterval(globalTimer); globalTimer = null; }
+  window.speechSynthesis.cancel();
+  updateControlsState(false);
+  startBtn.disabled = false;
+  log('<strong>Test sona erdi.</strong>');
+
+  // Test bittiğinde hala aktif bir olay varsa onu da kaçırıldı say.
+  if(currentActiveEvent && currentActiveEvent.windowOpen && !currentActiveEvent.satisfied){
+      currentActiveEvent.windowOpen = false;
+      currentActiveEvent.missed = true;
+      missed++;
+      missedCountEl.textContent = missed;
+      log(`<span style="color:#ef4444;">Kaçırıldı:</span> Test sona erdiğinde bir olay (${currentActiveEvent.type === 'vowel' ? '3 Sesli' : '3 Sessiz'} ${currentActiveEvent.last3letters.join(',')}) yanıtlanmamıştı.`);
+  }
+  currentActiveEvent = null; // Sıfırla
+  currentSequenceBuffer = []; // Sıfırla
+
+  renderResults();
+}
+
+showResult.onclick = renderResults;
+
+function renderResults(){
+  const container = document.getElementById('resultTable');
+  let html = '<h3 style="margin-top:24px;border-top:1px dashed #1b2a38;padding-top:18px;">Test Sonuçları</h3>';
+  html += '<table><tr><th>Toplam Doğru</th><th>Toplam Yanlış</th><th>Kaçırılan</th><th>Toplam Denenen Olay</th></tr>';
+  html += `<tr><td>${correct}</td><td>${wrong}</td><td>${missed}</td><td>${events.length}</td></tr></table>`;
+
+  html += '<h4 style="margin-top:20px;">Olay Dökümü (3lü Harf Tespitleri)</h4>';
+  if (events.length === 0) {
+      html += '<p>Herhangi bir 3\'lü harf serisi tespit edilmedi.</p>';
+  } else {
+      html += '<table><tr><th>#</th><th>Tip</th><th>Tespit Edilen Harfler</th><th>Zaman</th><th>Sonuç</th></tr>';
+      events.forEach((e,i)=>{
+        const res = e.satisfied ? '<span style="color:#06b6d4;">başarılı</span>' : (e.missed ? '<span style="color:#ef4444;">kaçırıldı</span>' : '<span style="color:#f59e0b;">yanıtlanmadı</span>');
+        html += `<tr><td>${i+1}</td><td>${e.type === 'vowel' ? '3 Sesli' : '3 Sessiz'}</td><td>${e.last3letters.join(', ')}</td><td>${new Date(e.time).toLocaleTimeString()}</td><td>${res}</td></tr>`;
+      });
+      html += '</table>';
+  }
+
+
+  html += '<h4 style="margin-top:20px;">Buton Basış Dökümü</h4>';
+  if (presses.length === 0) {
+      html += '<p>Herhangi bir butona basılmadı.</p>';
+  } else {
+      html += '<table><tr><th>#</th><th>Basılan Buton</th><th>Basış Zamanı</th><th>Sonuç</th></tr>';
+      presses.forEach((p,i)=>{
+        let resText = p.result;
+        let resColor = '';
+        if (p.result === 'correct') { resText = 'Doğru'; resColor = '#06b6d4'; }
+        else if (p.result === 'wrong') { resText = 'Yanlış (Yanlış buton)'; resColor = '#f59e0b'; }
+        else if (p.result === 'false') { resText = 'Yanlış (Boş basış)'; resColor = '#f59e0b'; }
+
+        html += `<tr><td>${i+1}</td><td>${p.type === 'white' ? 'Beyaz' : 'Kırmızı'}</td><td>${new Date(p.when).toLocaleTimeString()}</td><td style="color:${resColor};font-weight:600;">${resText}</td></tr>`;
+      });
+      html += '</table>';
+  }
+  container.innerHTML = html;
+}
+
+window.addEventListener('beforeunload', ()=>{ window.speechSynthesis.cancel(); });
+
+// YENİ: Logları göster/gizle fonksiyonu
+function toggleLogVisibility() {
+  if (showLogCheckbox.checked) {
+    logEl.style.display = 'block'; // Varsayılan stilimiz blok
+  } else {
+    logEl.style.display = 'none';
+  }
+}
+
+// YENİ: Checkbox değiştiğinde log görünürlüğünü güncelle
+showLogCheckbox.addEventListener('change', toggleLogVisibility);
+
+// YENİ: Başlangıçta log görünürlüğünü ayarla
+toggleLogVisibility();
+
+updateControlsState(false);
+
+//credits +90 552 219 3947
+</script>
+</body>
+</html>
