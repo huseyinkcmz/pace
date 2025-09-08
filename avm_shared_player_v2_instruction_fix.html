@@ -461,9 +461,12 @@
             opacity: 0.9; 
         }
     
-#instruction-screen h2 {
-  margin-bottom: 12px;
-    
+/* Hizalama düzeltmesi: Talimat ekranındaki fazla boşluk azaltıldı */
+#instruction-screen.active {
+  padding-top: 0.5rem;  /* Eskisi 2rem'di */
+}
+#instruction-screen #instruction-corridor-list {
+  margin: 16px 0;       /* Eskisi 40px */
 }
 
 </style>
